@@ -14,6 +14,7 @@ import { Analytics } from '@vercel/analytics/react';
 import useTextDirection from '@/hooks/use-text-direction';
 import Script from 'next/script';
 import CookieBanner from '@/components/cookie-consent';
+import SiteHeader from '@/components/SiteHeader';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -102,13 +103,14 @@ export default async function RootLayout({
           fontSans.variable
         )}
       >
+        <SiteHeader />
         <Providers
           themeProps={
             { attribute: 'class', defaultTheme: 'light' } as ThemeProviderProps
           }
         >
           <div className='relative flex flex-col h-screen'>
-            <Navbar navItems={navItems} navMenuItems={navMenuItems} />
+            {/**<Navbar navItems={navItems} navMenuItems={navMenuItems} />**/}
             <main className='container mx-auto max-w-7xl pt-16 px-6 flex-grow'>
               {children}
               <CookieBanner />

@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@nextui-org/button';
-import { RadioGroup, Radio } from '@nextui-org/radio';
-import { Progress } from '@nextui-org/progress';
+import clsx from 'clsx';
 import confetti from 'canvas-confetti';
 import { useRouter } from '@/navigation';
 
@@ -13,7 +11,6 @@ import { sleep, formatTimer, isDev } from '@/lib/helpers';
 import useWindowDimensions from '@/hooks/useWindowDimensions';
 import useTimer from '@/hooks/useTimer';
 import { type Answer } from '@/types';
-import { Card, CardHeader } from '@nextui-org/card';
 
 interface SurveyProps {
   questions: Question[];
@@ -50,13 +47,10 @@ export const Survey = ({
   }, [width]);
 
   useEffect(() => {
-    const restoreData = () => {
-      if (dataInLocalStorage()) {
-        console.log('Restoring data from local storage');
-        restoreDataFromLocalStorage();
-      }
-    };
-    restoreData();
+    if (dataInLocalStorage()) {
+      restoreDataFromLocalStorage();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentQuestions = useMemo(
@@ -69,7 +63,6 @@ export const Survey = ({
   );
 
   const isTestDone = questions.length === answers.length;
-
   const progress = Math.round((answers.length / questions.length) * 100);
 
   const nextButtonDisabled =
@@ -82,7 +75,7 @@ export const Survey = ({
   const backButtonDisabled = currentQuestionIndex === 0 || loading;
 
   async function handleAnswer(id: string, value: string) {
-    const question = questions.find((question) => question.id === id);
+    const question = questions.find((q) => q.id === id);
     if (!question) return;
 
     const newAnswer: Answer = {
@@ -92,10 +85,7 @@ export const Survey = ({
       facet: question.facet
     };
 
-    setAnswers((prevAnswers) => [
-      ...prevAnswers.filter((a) => a.id !== id),
-      newAnswer
-    ]);
+    setAnswers((prev) => [...prev.filter((a) => a.id !== id), newAnswer]);
 
     const latestAnswerId = answers.slice(-1)[0]?.id;
 
@@ -127,11 +117,11 @@ export const Survey = ({
 
   function skipToEnd() {
     const randomAnswers = questions
-      .map((question) => ({
-        id: question.id,
+      .map((q) => ({
+        id: q.id,
         score: Math.floor(Math.random() * 5) + 1,
-        domain: question.domain,
-        facet: question.facet
+        domain: q.domain,
+        facet: q.facet
       }))
       .slice(0, questions.length - 1);
 
@@ -152,7 +142,6 @@ export const Survey = ({
     });
     localStorage.removeItem('inProgress');
     localStorage.removeItem('b5data');
-    console.log(result);
     localStorage.setItem('resultId', result.id);
     router.push(`/result/${result.id}`);
   }
@@ -170,9 +159,9 @@ export const Survey = ({
   }
 
   function restoreDataFromLocalStorage() {
-    const data = localStorage.getItem('b5data');
-    if (data) {
-      const { answers, currentQuestionIndex } = JSON.parse(data);
+    const raw = localStorage.getItem('b5data');
+    if (raw) {
+      const { answers, currentQuestionIndex } = JSON.parse(raw);
       setAnswers(answers);
       setCurrentQuestionIndex(currentQuestionIndex);
       setRestored(true);
@@ -180,109 +169,179 @@ export const Survey = ({
   }
 
   function clearDataInLocalStorage() {
-    console.log('Clearing data from local storage');
     localStorage.removeItem('inProgress');
     localStorage.removeItem('b5data');
     location.reload();
   }
 
   return (
-    <div className='mt-2'>
-      <Progress
-        aria-label='Progress bar'
-        value={progress}
-        className='max-w'
-        showValueLabel={true}
-        label={formatTimer(seconds)}
-        minValue={0}
-        maxValue={100}
-        size='lg'
-        color='secondary'
-      />
+    <div className="mt-2">
+      {/* Top progress + timer in Taroscoper style */}
+      <div className="panel panel--pad" style={{ marginBottom: '1rem' }}>
+        <div className="bar" style={{ marginBottom: '0.5rem' }}>
+          <div className="chip">
+            <span>Progress</span>
+            <strong>{progress}%</strong>
+          </div>
+          <div className="chip">
+            <span>Time</span>
+            <strong>{formatTimer(seconds)}</strong>
+          </div>
+        </div>
+        <div
+          aria-label="Progress bar"
+          className="cardframe"
+          style={{
+            height: 14,
+            padding: 0,
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              width: `${progress}%`,
+              background: 'var(--gold)',
+              transition: 'width 240ms ease'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Restored notice */}
       {restored && (
-        <Card className='mt-4 bg-warning/20 text-warning-600 dark:text-warning'>
-          <CardHeader className='justify-between'>
-            <Button isIconOnly variant='light' color='warning'>
+        <div
+          className="panel"
+          style={{
+            padding: '0.5rem 0.75rem',
+            marginBottom: '1rem',
+            borderColor: 'rgba(214,178,94,0.45)'
+          }}
+        >
+          <div className="bar">
+            <span className="chip" aria-hidden>
               <InfoIcon />
-            </Button>
-            <p>
-              Your answers has been restored. Click here to&nbsp;
+              Restored
+            </span>
+            <p style={{ margin: 0 }}>
+              Your answers have been restored. Click here to{' '}
               <a
-                className='underline cursor-pointer'
+                className="underline"
                 onClick={clearDataInLocalStorage}
-                aria-label='Clear data'
+                aria-label="Clear data"
               >
                 start a new test
               </a>
               .
             </p>
-            <Button
-              isIconOnly
-              variant='light'
-              color='warning'
+            <button
+              type="button"
+              className="btn"
               onClick={() => setRestored(false)}
+              aria-label="Dismiss"
+              style={{ padding: '6px 8px' }}
             >
               <CloseIcon />
-            </Button>
-          </CardHeader>
-        </Card>
-      )}
-      {currentQuestions.map((question) => (
-        <div key={'q' + question.num}>
-          <h2 className='text-2xl my-4'>{question.text}</h2>
-          <div>
-            <RadioGroup
-              onValueChange={(value) => handleAnswer(question.id, value)}
-              value={answers
-                .find((answer) => answer.id === question.id)
-                ?.score.toString()}
-              color='secondary'
-              isDisabled={inProgress}
-            >
-              {question.choices.map((choice, index) => (
-                <Radio
-                  key={index + question.id}
-                  value={choice.score.toString()}
-                >
-                  {choice.text}
-                </Radio>
-              ))}
-            </RadioGroup>
+            </button>
           </div>
         </div>
-      ))}
-      <div className='my-12 space-x-4 inline-flex'>
-        <Button
-          color='primary'
-          isDisabled={backButtonDisabled}
+      )}
+
+      {/* Questions */}
+      {currentQuestions.map((question) => {
+        const selected = answers.find((a) => a.id === question.id)?.score;
+        return (
+          <div key={'q' + question.num} className="cardframe" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+            <h2 className="title" style={{ color: 'var(--ink)', marginBottom: '0.75rem' }}>
+              {question.text}
+            </h2>
+
+            <fieldset>
+              <legend className="sr-only">{question.text}</legend>
+              <div className="grid gap-2">
+                {question.choices.map((choice, index) => {
+                  const value = choice.score;
+                  const isSelected = Number(selected) === value;
+                  return (
+                    <label
+                      key={index + question.id}
+                      className={clsx(
+                        'flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition',
+                        isSelected
+                          ? 'border-[rgba(214,178,94,0.9)]'
+                          : 'border-[rgba(0,0,0,0.25)] hover:bg-[rgba(0,0,0,0.05)]'
+                      )}
+                      style={{ color: 'var(--ink)', background: isSelected ? 'rgba(214,178,94,0.08)' : 'transparent' }}
+                    >
+                      <input
+                        type="radio"
+                        className="sr-only"
+                        name={`q-${question.id}`}
+                        value={value}
+                        checked={isSelected}
+                        onChange={() => handleAnswer(question.id, String(value))}
+                        disabled={inProgress}
+                        aria-label={choice.text}
+                      />
+                      <span
+                        aria-hidden
+                        className="h-3 w-3 rounded-full border flex items-center justify-center"
+                        style={{
+                          borderColor: isSelected ? 'var(--gold)' : 'rgba(0,0,0,0.45)'
+                        }}
+                      >
+                        {isSelected && (
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ background: 'var(--gold)' }}
+                          />
+                        )}
+                      </span>
+                      <span>{choice.text}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          </div>
+        );
+      })}
+
+      {/* Nav buttons */}
+      <div className="btn-row" style={{ marginTop: '1.5rem' }}>
+        <button
+          type="button"
+          className="btn btn--bronze"
           onClick={handlePreviousQuestions}
+          disabled={backButtonDisabled}
         >
           {prevText.toUpperCase()}
-        </Button>
+        </button>
 
-        <Button
-          color='primary'
-          isDisabled={nextButtonDisabled}
+        <button
+          type="button"
+          className="btn btn--gold"
           onClick={handleNextQuestions}
+          disabled={nextButtonDisabled}
         >
           {nextText.toUpperCase()}
-        </Button>
+        </button>
 
         {isTestDone && (
-          <Button
-            color='secondary'
+          <button
+            type="button"
+            className="btn btn--gold"
             onClick={submitTest}
             disabled={loading}
-            isLoading={loading}
           >
-            {resultsText.toUpperCase()}
-          </Button>
+            {loading ? 'SAVING…' : resultsText.toUpperCase()}
+          </button>
         )}
 
         {isDev && !isTestDone && (
-          <Button color='primary' onClick={skipToEnd}>
+          <button type="button" className="btn btn--bronze" onClick={skipToEnd}>
             Skip to end (dev)
-          </Button>
+          </button>
         )}
       </div>
     </div>

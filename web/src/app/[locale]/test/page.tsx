@@ -21,22 +21,30 @@ export default function TestPage({
     lang || (questionLanguages.some((l) => l.id === locale) ? locale : 'en');
   const questions = getItems(language);
   const t = useTranslations('test');
+
   return (
-    <>
-      <div className='flex'>
-        <TestLanguageSwitch
-          availableLanguages={questionLanguages}
+    <div className="w-full">
+      {/* MOD: panel wrapper to match Taroscoper card look */}
+      <div className="panel panel--pad">
+        <div className="bar" style={{ marginBottom: '1rem' }}>
+          <h1 className="title">Big Five Personality Test</h1>
+          {/**<TestLanguageSwitch
+            availableLanguages={questionLanguages}
+            language={language}
+  />**/}
+        </div>
+
+        <hr className="hr-gold" />
+
+        <Survey
+          questions={questions}
+          nextText={t('next')}
+          prevText={t('back')}
+          resultsText={t('seeResults')}
+          saveTest={saveTest}
           language={language}
         />
       </div>
-      <Survey
-        questions={questions}
-        nextText={t('next')}
-        prevText={t('back')}
-        resultsText={t('seeResults')}
-        saveTest={saveTest}
-        language={language}
-      />
-    </>
+    </div>
   );
 }
