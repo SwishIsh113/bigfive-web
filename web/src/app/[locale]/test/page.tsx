@@ -3,7 +3,7 @@ import { Survey } from './survey';
 import { useTranslations } from 'next-intl';
 import { saveTest } from '@/actions';
 import { unstable_setRequestLocale } from 'next-intl/server';
-import { TestLanguageSwitch } from './test-language-switch';
+//import { TestLanguageSwitch } from './test-language-switch';
 
 const questionLanguages = getInfo().languages;
 
